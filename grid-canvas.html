@@ -1,0 +1,157 @@
+<style>
+    body,
+    html {
+        margin: 0;
+        height: 100%;
+    }
+
+    body {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        flex-direction: column;
+    }
+</style>
+
+<div>
+    <button id="increase">+ Increase Node Size</button>
+    <button id="decrease">- Decrease Node Size</button>
+</div>
+<h3>Click to draw :)</h3>
+<div id="app"></div>
+
+<script>
+    const increase = document.getElementById('increase')
+    const decrease = document.getElementById('decrease')
+    const width = window.innerWidth - 40
+    const height = window.innerHeight - 120
+    let nodeSize = 20
+    let grid = generateGrid()
+    let isMousePressed = false;
+
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    canvas.setAttribute('width', width)
+    canvas.setAttribute('height', height)
+    document.getElementById('app').appendChild(canvas)
+
+    function generateGrid() {
+        const grd = []
+        for (let row = 0; row < width / nodeSize; row++) {
+            const nodes = []
+            for (let col = 0; col < height / nodeSize; col++) {
+                nodes.push({
+                    ...generateNode(row, col)
+                })
+            }
+
+            grd.push(nodes)
+        }
+
+        return grd
+    }
+
+    function addListeners() {
+        canvas.addEventListener('mousemove', handleMouseMove)
+        canvas.addEventListener('mousedown', handleMouseDown)
+        canvas.addEventListener('mouseup', handleMouseUp)
+        canvas.addEventListener('mouseleave', handleMouseUp)
+        canvas.addEventListener('click', handleMouseClick)
+
+        increase.addEventListener('click', onClickIncrease)
+        decrease.addEventListener('click', onClickDecrease)
+    }
+
+    function drawGrid(grid) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        for (let row of grid) {
+            for (let node of row) {
+                context.fillStyle = node.isBlocked ? 'red' : '#236b9e'
+                context.fillRect((node.size + 1) * node.row, (node.size + 1) * node.column, node.size, node.size)
+            }
+        }
+    }
+
+    function toggleNode(evt) {
+        const x = evt.x - canvas.getClientRects()[0].left
+        const y = evt.y - canvas.getClientRects()[0].top
+
+        const gridToRedraw = getNewGridWithToggledNode(x, y)
+
+        if (gridToRedraw) {
+            drawGrid(gridToRedraw)
+        }
+    }
+
+    let lastNode
+    function getNewGridWithToggledNode(x, y) {
+        const newGrid = [...grid]
+        const node = getNodeByCoordinated(x, y)
+
+        if (!lastNode || (node.column !== lastNode.column || node.row !== lastNode.row)) {
+            lastNode = node
+
+            const newNode = {
+                ...node,
+                isBlocked: !node.isBlocked
+            }
+
+            newGrid[node.row][node.column] = newNode;
+
+            return newGrid
+        }
+
+        return null
+    }
+
+    function getNodeByCoordinated(x, y) {
+        const row = Math.floor(x / (nodeSize + 1))
+        const col = Math.floor(y / (nodeSize + 1))
+
+        return grid[row][col]
+    }
+
+    function generateNode(row, column) {
+        return {
+            row,
+            column,
+            isBlocked: false,
+            size: nodeSize,
+        }
+    }
+
+    const handleMouseClick = (evt) => {
+        toggleNode(evt)
+    }
+
+    const handleMouseMove = (evt) => {
+        if (isMousePressed) {
+            toggleNode(evt)
+        }
+    }
+
+    const onClickIncrease = () => {
+        nodeSize++
+        grid = generateGrid()
+        drawGrid(grid)
+    }
+
+    const onClickDecrease = () => {
+        nodeSize = nodeSize <= 1 ? 1 : --nodeSize
+        grid = generateGrid()
+        drawGrid(grid)
+    }
+
+    const handleMouseDown = (evt) => {
+        isMousePressed = true
+    }
+
+    const handleMouseUp = (evt) => {
+        isMousePressed = false
+    }
+
+
+    generateGrid()
+    drawGrid(grid)
+    addListeners()
+</script>
